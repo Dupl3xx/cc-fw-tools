@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
+import shutil
 import struct
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -9,6 +12,11 @@ from pathlib import Path
 
 
 PATCH_DIR = Path(__file__).resolve().parent
+SPOOF_PATCH = PATCH_DIR.parent / "spoof-slicer-firmware-version" / "patch.py"
+SPOOF_CAVE_VA = 0x00451048
+SPOOF_SITES = (0x0036859C, 0x0036A98C, 0x0037E80C)
+SPOOF_ORIGINAL = bytes.fromhex("38 3a 09 e3 40 30 40 e3")
+SPOOF_RELOCATED = bytes.fromhex("48 30 01 e3 45 30 40 e3")
 sys.path.insert(0, str(PATCH_DIR))
 
 import patch_app  # noqa: E402
@@ -47,6 +55,10 @@ class BrandMapTests(unittest.TestCase):
         self.assertLessEqual(
             patch_app.BRAND_CAVE_START_VA + len(resolver),
             patch_app.BRAND_CAVE_LIMIT_VA,
+        )
+        self.assertLessEqual(
+            patch_app.BRAND_CAVE_START_VA + len(resolver),
+            SPOOF_CAVE_VA,
         )
 
 
@@ -107,11 +119,17 @@ class TagCodecTests(unittest.TestCase):
 
 class BinaryPatchTests(unittest.TestCase):
     def make_synthetic_app(self) -> Path:
-        size = patch_app.off(patch_app.BRAND_CAVE_LIMIT_VA) + 0x100
+        size = max(
+            patch_app.off(patch_app.BRAND_CAVE_LIMIT_VA) + 0x100,
+            max(patch_app.off(site) for site in SPOOF_SITES) + len(SPOOF_ORIGINAL),
+        )
         data = bytearray(size)
         for va, expected in patch_app.EXPECTED_HOOK_BYTES.items():
             start = patch_app.off(va)
             data[start:start + len(expected)] = expected
+        for site in SPOOF_SITES:
+            start = patch_app.off(site)
+            data[start:start + len(SPOOF_ORIGINAL)] = SPOOF_ORIGINAL
         handle = tempfile.NamedTemporaryFile(prefix="rfid-brand-test-", delete=False)
         handle.write(data)
         handle.close()
@@ -159,6 +177,85 @@ class BinaryPatchTests(unittest.TestCase):
         path.write_bytes(data)
         with self.assertRaises(SystemExit):
             patch_app.patch_app(path)
+
+    def test_slicer_spoof_can_follow_rfid_without_overlap(self) -> None:
+        source = self.make_synthetic_app()
+        self.addCleanup(source.unlink, missing_ok=True)
+        patch_app.patch_app(source)
+
+        with tempfile.TemporaryDirectory(prefix="rfid-spoof-test-") as root:
+            app_dir = Path(root) / "app"
+            app_dir.mkdir()
+            target = app_dir / "app"
+            shutil.copyfile(source, target)
+            env = {
+                **os.environ,
+                "SQUASHFS_ROOT": root,
+                "FW_VER": "1.4.46",
+            }
+            result = subprocess.run(
+                [sys.executable, str(SPOOF_PATCH)],
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = target.read_bytes()
+
+        for site in SPOOF_SITES:
+            self.assertEqual(
+                data[patch_app.off(site):patch_app.off(site) + len(SPOOF_RELOCATED)],
+                SPOOF_RELOCATED,
+            )
+        self.assertEqual(
+            data[
+                patch_app.off(SPOOF_CAVE_VA):
+                patch_app.off(SPOOF_CAVE_VA) + len(b"1.4.46\0")
+            ],
+            b"1.4.46\0",
+        )
+        self.assertIn(
+            b"Prusament\0",
+            data[
+                patch_app.off(patch_app.BRAND_CAVE_START_VA):
+                patch_app.off(patch_app.BRAND_CAVE_LIMIT_VA)
+            ],
+        )
+
+    def test_slicer_spoof_refuses_occupied_cave_without_partial_patch(self) -> None:
+        source = self.make_synthetic_app()
+        self.addCleanup(source.unlink, missing_ok=True)
+        patch_app.patch_app(source)
+
+        with tempfile.TemporaryDirectory(prefix="rfid-spoof-collision-") as root:
+            app_dir = Path(root) / "app"
+            app_dir.mkdir()
+            target = app_dir / "app"
+            shutil.copyfile(source, target)
+            data = bytearray(target.read_bytes())
+            data[patch_app.off(SPOOF_CAVE_VA)] = 1
+            target.write_bytes(data)
+            env = {
+                **os.environ,
+                "SQUASHFS_ROOT": root,
+                "FW_VER": "1.4.46",
+            }
+            result = subprocess.run(
+                [sys.executable, str(SPOOF_PATCH)],
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            after = target.read_bytes()
+
+        for site in SPOOF_SITES:
+            self.assertEqual(
+                after[patch_app.off(site):patch_app.off(site) + len(SPOOF_ORIGINAL)],
+                SPOOF_ORIGINAL,
+            )
 
 
 class LiveVerifyTests(unittest.TestCase):

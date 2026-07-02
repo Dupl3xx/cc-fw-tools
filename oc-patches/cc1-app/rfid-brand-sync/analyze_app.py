@@ -22,6 +22,11 @@ MATERIAL_TABLE_VA = 0x00441080
 SUBTYPE_TEMP_TABLE_VA = 0x004411F8
 SUBTYPE_NAME_TABLE_VA = 0x00441478
 
+SLICER_VERSION_CAVE_VA = 0x00451048
+SLICER_VERSION_SITES = [0x0036859C, 0x0036A98C, 0x0037E80C]
+SLICER_VERSION_ORIGINAL = bytes.fromhex("38 3a 09 e3 40 30 40 e3")
+SLICER_VERSION_RELOCATED = bytes.fromhex("48 30 01 e3 45 30 40 e3")
+
 
 def off(va: int) -> int:
     return va - VA_DELTA
@@ -237,6 +242,33 @@ def main(argv: list[str]) -> int:
             == bytes.fromhex("ee 0e 0e e3"),
             "stock manufacturer resolver prologue is intact",
         )
+
+    slicer_site_bytes = [
+        data[off(site):off(site) + len(SLICER_VERSION_RELOCATED)]
+        for site in SLICER_VERSION_SITES
+    ]
+    slicer_spoofed = any(
+        site == SLICER_VERSION_RELOCATED for site in slicer_site_bytes
+    )
+    if slicer_spoofed:
+        for site, actual in zip(SLICER_VERSION_SITES, slicer_site_bytes):
+            audit.check(
+                actual == SLICER_VERSION_RELOCATED,
+                f"slicer version pointer is relocated at {site:#010x}",
+            )
+        audit.check(
+            data[
+                off(SLICER_VERSION_CAVE_VA):
+                off(SLICER_VERSION_CAVE_VA) + len(b"1.4.46\0")
+            ] == b"1.4.46\0",
+            "slicer-facing version cave contains 1.4.46",
+        )
+    else:
+        for site, actual in zip(SLICER_VERSION_SITES, slicer_site_bytes):
+            audit.check(
+                actual == SLICER_VERSION_ORIGINAL,
+                f"stock slicer version pointer is intact at {site:#010x}",
+            )
 
     audit_material_tables(data, audit)
 

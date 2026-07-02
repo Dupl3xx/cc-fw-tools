@@ -18,6 +18,7 @@ allocated cave regions are:
 | `0x00450c00` | `fix-end-print-hang` command string | 0x40 bytes reserved | `0x00450c3f` |
 | `0x00450300` | `rfid-brand-sync` manufacturer resolver/table | 0x260 bytes | `0x0045055f` |
 | `0x00450c40` | `rfid-brand-sync` brand resolver/strings | 0x404 bytes | `0x00451043` |
+| `0x00451048` | `spoof-slicer-firmware-version` version string | 7 bytes | `0x0045104e` |
 
 There are **no other code caves** in the current 1.4.46 patch set. The stock
 zero run `0x00450300`-`0x004508d7` remains free after `0x0045055f`, and the
@@ -120,6 +121,19 @@ display/slicer brand names while keeping ELEGOO tags mapped to the stock
 **Type:** In-place binary patch
 - `0x00341700`, `0x0034b8c4`, `0x0034b8dc`, `0x0034be8c`, `0x0034bfac`
 **No cave used.**
+
+### `spoof-slicer-firmware-version` (1.4.46)
+**Type:** In-place pointer repoint + data string cave
+**Cave:** `0x00451048` — `0x0045104e` (`1.4.46\0`)
+**In-place patches:**
+- `0x0035859c` (`VA 0x0036859c`): `movw r3, #0x9a38; movt r3, #0x40` → `movw r3, #0x1048; movt r3, #0x45`
+- `0x0035a98c` (`VA 0x0036a98c`): same instruction change
+- `0x0036e80c` (`VA 0x0037e80c`): same instruction change
+**Purpose:** Reports `1.4.46` to the slicer via UDP discovery, WebSocket attribute topic, and direct request-attribute responses, while leaving the real version string at `0x00409a38` (logs/UI/OTA) untouched.
+**Interaction note:** The upstream `0x00450e00` location overlaps the
+`rfid-brand-sync` string table. This combined build deliberately relocates the
+seven-byte version string to the aligned free gap immediately after the RFID
+payload.
 
 ### `set-firmware-version-patch`
 **Enabled for 1.1.40 and 1.4.46.** Replaces the stock firmware version string in `app/app` with the OpenCentauri git-describe version.
