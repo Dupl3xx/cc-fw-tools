@@ -10,6 +10,19 @@ Please note that if a script is not specifically called-out in this README, it p
 
 If there are two versions of a script, and one has an -ac in the name, this is the original AnyCubic version of the file for reference.
 
+## RFID Brand Sync for CANVAS
+
+The `rfid-brand-sync` patch is an extensively audited extension for the
+Centauri Carbon 1 running OpenCentauri `0.4.0` on the `1.4.46` base firmware.
+It preserves original ELEGOO RFID tags and adds CANVAS-safe custom brands that
+are shared by the printer display and Elegoo Slicer.
+
+- [Ceska dokumentace](oc-patches/cc1-app/rfid-brand-sync/README-CZ.md)
+- [English documentation](oc-patches/cc1-app/rfid-brand-sync/README-EN.md)
+
+This patch is not compatible with ELEGOO firmware `1.4.49`. The guarded
+patcher refuses to modify unsupported application binaries.
+
 ## OpenCentauri Features
 
 1. TBD, but for now check out ./patch.sh at the top level of this repo!
