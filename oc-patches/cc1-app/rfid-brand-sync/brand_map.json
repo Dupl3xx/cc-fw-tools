@@ -1,65 +1,81 @@
 {
-  "notes": [
-    "Manufacturer codes are four raw EPC bytes written as hex, not NDEF text.",
-    "The patch accepts both readable byte order and reversed byte order for custom tags.",
-    "Unknown manufacturer codes intentionally fall back to Generic."
-  ],
+  "protocol": {
+    "description": "CANVAS-safe manufacturer IDs keep page 16 equal to 36EEEEEE.",
+    "page_16": "36EEEEEE",
+    "manufacturer_prefix": "EEEEEE",
+    "brand_byte_location": "page 17 byte 0",
+    "unknown_brand_fallback": "Generic"
+  },
   "brands": [
-    {
-      "id": 0,
-      "name": "ELEGOO",
-      "codes": ["EEEEEEEE"],
-      "keeps_original_tags": true
-    },
-    {
-      "id": 1,
-      "name": "Generic",
-      "codes": ["47454E52", "524E4547"]
-    },
-    {
-      "id": 2,
-      "name": "Prusament",
-      "codes": ["50525553", "53555250"]
-    },
-    {
-      "id": 3,
-      "name": "Bambu Lab",
-      "codes": ["424D424C", "4C424D42"]
-    },
-    {
-      "id": 4,
-      "name": "Plasty Mladec",
-      "codes": ["504C4D44", "444D4C50"]
-    },
-    {
-      "id": 5,
-      "name": "eSUN",
-      "codes": ["4553554E", "4E555345"]
-    },
-    {
-      "id": 6,
-      "name": "Polymaker",
-      "codes": ["504F4C59", "594C4F50"]
-    },
-    {
-      "id": 7,
-      "name": "SUNLU",
-      "codes": ["53554E4C", "4C4E5553"]
-    },
-    {
-      "id": 8,
-      "name": "Overture",
-      "codes": ["4F565452", "5254564F"]
-    },
-    {
-      "id": 9,
-      "name": "Spectrum",
-      "codes": ["53504543", "43455053"]
-    },
-    {
-      "id": 10,
-      "name": "Creality",
-      "codes": ["43524541", "41455243"]
-    }
+    {"id": 0, "name": "ELEGOO", "codes": ["EEEEEEEE"], "keeps_original_tags": true},
+    {"id": 1, "name": "Generic", "codes": ["EEEEEE01"]},
+    {"id": 2, "name": "Prusament", "codes": ["EEEEEE02"]},
+    {"id": 3, "name": "Bambu Lab", "codes": ["EEEEEE03"]},
+    {"id": 4, "name": "Plasty Mladec", "codes": ["EEEEEE04"]},
+    {"id": 5, "name": "eSUN", "codes": ["EEEEEE05"]},
+    {"id": 6, "name": "Polymaker", "codes": ["EEEEEE06"]},
+    {"id": 7, "name": "SUNLU", "codes": ["EEEEEE07"]},
+    {"id": 8, "name": "Overture", "codes": ["EEEEEE08"]},
+    {"id": 9, "name": "Spectrum", "codes": ["EEEEEE09"]},
+    {"id": 10, "name": "Creality", "codes": ["EEEEEE0A"]},
+    {"id": 11, "name": "Anycubic", "codes": ["EEEEEE0B"]},
+    {"id": 12, "name": "Eryone", "codes": ["EEEEEE0C"]},
+    {"id": 13, "name": "FormFutura", "codes": ["EEEEEE0D"]},
+    {"id": 14, "name": "Hatchbox", "codes": ["EEEEEE0E"]},
+    {"id": 15, "name": "Kingroon", "codes": ["EEEEEE0F"]},
+    {"id": 16, "name": "QIDI", "codes": ["EEEEEE10"]},
+    {"id": 17, "name": "Raise3D", "codes": ["EEEEEE11"]},
+    {"id": 18, "name": "Flashforge", "codes": ["EEEEEE12"]},
+    {"id": 19, "name": "Snapmaker", "codes": ["EEEEEE13"]},
+    {"id": 20, "name": "ColorFabb", "codes": ["EEEEEE14"]},
+    {"id": 21, "name": "Fillamentum", "codes": ["EEEEEE15"]},
+    {"id": 22, "name": "Fiberlogy", "codes": ["EEEEEE16"]},
+    {"id": 23, "name": "Filament PM", "codes": ["EEEEEE17"]},
+    {"id": 24, "name": "BASF Ultrafuse", "codes": ["EEEEEE18"]},
+    {"id": 25, "name": "AzureFilm", "codes": ["EEEEEE19"]},
+    {"id": 26, "name": "Atomic Filament", "codes": ["EEEEEE1A"]},
+    {"id": 27, "name": "COEX 3D", "codes": ["EEEEEE1B"]},
+    {"id": 28, "name": "FILL3D", "codes": ["EEEEEE1C"]},
+    {"id": 29, "name": "FDplast", "codes": ["EEEEEE1D"]},
+    {"id": 30, "name": "GreenGate3D", "codes": ["EEEEEE1E"]},
+    {"id": 31, "name": "Numakers", "codes": ["EEEEEE1F"]},
+    {"id": 32, "name": "Yumi", "codes": ["EEEEEE20"]},
+    {"id": 33, "name": "MatterHackers", "codes": ["EEEEEE21"]},
+    {"id": 34, "name": "Proto-pasta", "codes": ["EEEEEE22"]},
+    {"id": 35, "name": "Rosa3D", "codes": ["EEEEEE23"]},
+    {"id": 36, "name": "SainSmart", "codes": ["EEEEEE24"]},
+    {"id": 37, "name": "Siraya Tech", "codes": ["EEEEEE25"]},
+    {"id": 38, "name": "The Filament", "codes": ["EEEEEE26"]},
+    {"id": 39, "name": "ZIRO", "codes": ["EEEEEE27"]},
+    {"id": 40, "name": "Zyltech", "codes": ["EEEEEE28"]},
+    {"id": 41, "name": "JAYO", "codes": ["EEEEEE29"]},
+    {"id": 42, "name": "Geeetech", "codes": ["EEEEEE2A"]},
+    {"id": 43, "name": "iSANMATE", "codes": ["EEEEEE2B"]},
+    {"id": 44, "name": "AMOLEN", "codes": ["EEEEEE2C"]},
+    {"id": 45, "name": "Duramic 3D", "codes": ["EEEEEE2D"]},
+    {"id": 46, "name": "Voxelab", "codes": ["EEEEEE2E"]},
+    {"id": 47, "name": "Sovol", "codes": ["EEEEEE2F"]},
+    {"id": 48, "name": "Tiertime", "codes": ["EEEEEE30"]},
+    {"id": 49, "name": "Volumic", "codes": ["EEEEEE31"]},
+    {"id": 50, "name": "Peopoly", "codes": ["EEEEEE32"]},
+    {"id": 51, "name": "Co Print", "codes": ["EEEEEE33"]},
+    {"id": 52, "name": "Afinia", "codes": ["EEEEEE34"]},
+    {"id": 53, "name": "Artillery", "codes": ["EEEEEE35"]},
+    {"id": 54, "name": "CoLiDo", "codes": ["EEEEEE36"]},
+    {"id": 55, "name": "Cubicon", "codes": ["EEEEEE37"]},
+    {"id": 56, "name": "DeltaMaker", "codes": ["EEEEEE38"]},
+    {"id": 57, "name": "FusRock", "codes": ["EEEEEE39"]},
+    {"id": 58, "name": "Valment", "codes": ["EEEEEE3A"]},
+    {"id": 59, "name": "Eolas Prints", "codes": ["EEEEEE3B"]},
+    {"id": 60, "name": "Aliz", "codes": ["EEEEEE3C"]},
+    {"id": 61, "name": "Extrudr", "codes": ["EEEEEE3D"]},
+    {"id": 62, "name": "3DJake", "codes": ["EEEEEE3E"]},
+    {"id": 63, "name": "Recreus", "codes": ["EEEEEE3F"]},
+    {"id": 64, "name": "NinjaTek", "codes": ["EEEEEE40"]},
+    {"id": 65, "name": "taulman3D", "codes": ["EEEEEE41"]},
+    {"id": 66, "name": "Kimya", "codes": ["EEEEEE42"]},
+    {"id": 67, "name": "Verbatim", "codes": ["EEEEEE43"]},
+    {"id": 68, "name": "AddNorth", "codes": ["EEEEEE44"]},
+    {"id": 69, "name": "Noctuo", "codes": ["EEEEEE45"]}
   ]
 }

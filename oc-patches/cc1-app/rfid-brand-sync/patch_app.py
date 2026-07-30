@@ -12,8 +12,10 @@ VA_DELTA = 0x10000
 
 BRAND_RESOLVER_HOOK_VA = 0x00291C90
 MANUFACTURER_RESOLVER_HOOK_VA = 0x00292014
-CAVE_START_VA = 0x00450C40
-CAVE_LIMIT_VA = 0x00451000
+MANUFACTURER_CAVE_START_VA = 0x00450300
+MANUFACTURER_CAVE_LIMIT_VA = 0x004508D8
+BRAND_CAVE_START_VA = 0x00450C40
+BRAND_CAVE_LIMIT_VA = 0x004510D8
 
 ORIGINAL_ELEGOO_STR_VA = 0x00442214
 ORIGINAL_GENERIC_STR_VA = 0x0044221C
@@ -29,15 +31,13 @@ EXPECTED_HOOK_BYTES = {
 
 
 COND_EQ = 0x0
+COND_NE = 0x1
+COND_HI = 0x8
 COND_AL = 0xE
 
 
 def off(va: int) -> int:
     return va - VA_DELTA
-
-
-def read_u32(data: bytes | bytearray, file_off: int) -> int:
-    return struct.unpack_from("<I", data, file_off)[0]
 
 
 def write_u32(data: bytearray, file_off: int, value: int) -> None:
@@ -72,6 +72,37 @@ def enc_cmp_imm(rn: int, imm8: int, cond: int = COND_AL) -> int:
     return (cond << 28) | 0x03500000 | (rn << 16) | imm8
 
 
+def enc_ldr_imm(rd: int, rn: int, imm12: int = 0, cond: int = COND_AL) -> int:
+    if not 0 <= imm12 <= 0xFFF:
+        raise ValueError("LDR immediate is out of range")
+    return (cond << 28) | 0x05900000 | (rn << 16) | (rd << 12) | imm12
+
+
+def enc_ldr_scaled_reg(rd: int, rn: int, rm: int, shift: int, cond: int = COND_AL) -> int:
+    if not 0 <= shift <= 31:
+        raise ValueError("LDR register shift is out of range")
+    return (
+        (cond << 28)
+        | 0x07900000
+        | (rn << 16)
+        | (rd << 12)
+        | (shift << 7)
+        | rm
+    )
+
+
+def enc_add_imm(rd: int, rn: int, imm8: int, cond: int = COND_AL) -> int:
+    if not 0 <= imm8 <= 0xFF:
+        raise ValueError("This patcher only encodes unrotated ADD immediates")
+    return (cond << 28) | 0x02800000 | (rn << 16) | (rd << 12) | imm8
+
+
+def enc_subs_imm(rd: int, rn: int, imm8: int, cond: int = COND_AL) -> int:
+    if not 0 <= imm8 <= 0xFF:
+        raise ValueError("This patcher only encodes unrotated SUBS immediates")
+    return (cond << 28) | 0x02500000 | (rn << 16) | (rd << 12) | imm8
+
+
 def enc_mov_imm(rd: int, imm8: int, cond: int = COND_AL) -> int:
     if not 0 <= imm8 <= 0xFF:
         raise ValueError("This patcher only encodes unrotated MOV immediates")
@@ -82,150 +113,152 @@ def enc_bx_lr(cond: int = COND_AL) -> int:
     return (cond << 28) | 0x012FFF1E
 
 
-def enc_ldr_pc(rd: int, instr_va: int, literal_va: int, cond: int = COND_AL) -> int:
-    imm = literal_va - (instr_va + 8)
-    if not 0 <= imm <= 0xFFF:
-        raise ValueError(f"Literal at {literal_va:#x} is out of range for LDR at {instr_va:#x}")
-    return (cond << 28) | 0x059F0000 | (rd << 12) | imm
-
-
-class ArmBlob:
-    def __init__(self, base_va: int) -> None:
-        self.base_va = base_va
-        self.words: list[int] = []
-        self.bytes_tail = bytearray()
-        self.labels: dict[str, int] = {}
-        self.literal_refs: list[tuple[int, str, int, int]] = []
-        self.pending_string_labels: dict[str, bytes] = {}
-
-    @property
-    def cursor_va(self) -> int:
-        return self.base_va + len(self.words) * 4 + len(self.bytes_tail)
-
-    def label(self, name: str) -> None:
-        self.align4()
-        self.labels[name] = self.cursor_va
-
-    def word(self, value: int) -> None:
-        if self.bytes_tail:
-            raise RuntimeError("Cannot emit instructions after raw data")
-        self.words.append(value & 0xFFFFFFFF)
-
-    def ldr_literal(self, rd: int, label: str, cond: int = COND_AL) -> None:
-        instr_va = self.base_va + len(self.words) * 4
-        self.literal_refs.append((len(self.words), label, rd, cond))
-        self.words.append(0)
-
-    def align4(self) -> None:
-        while len(self.bytes_tail) % 4:
-            self.bytes_tail.append(0)
-
-    def data_u32(self, value: int) -> None:
-        self.align4()
-        self.bytes_tail.extend(struct.pack("<I", value & 0xFFFFFFFF))
-
-    def string_label(self, label: str, value: str) -> None:
-        self.pending_string_labels[label] = value.encode("ascii") + b"\0"
-
-    def finish(self) -> bytes:
-        code_len = len(self.words) * 4
-        data = bytearray(struct.pack("<" + "I" * len(self.words), *self.words))
-        data.extend(self.bytes_tail)
-
-        for label, value in self.pending_string_labels.items():
-            while len(data) % 4:
-                data.append(0)
-            self.labels[label] = self.base_va + len(data)
-            data.extend(value)
-
-        while len(data) % 4:
-            data.append(0)
-
-        for index, label, rd, cond in self.literal_refs:
-            instr_va = self.base_va + index * 4
-            literal_va = self.labels[label]
-            struct.pack_into("<I", data, index * 4, enc_ldr_pc(rd, instr_va, literal_va, cond))
-
-        return bytes(data)
-
-
 def load_brand_map() -> list[dict]:
     map_path = Path(__file__).with_name("brand_map.json")
     brand_map = json.loads(map_path.read_text(encoding="utf-8"))
-    return brand_map["brands"]
+    brands = brand_map["brands"]
+    validate_brand_map(brands)
+    return brands
 
 
-def reversed_hex32(hex_code: str) -> str:
-    raw = bytes.fromhex(hex_code)
-    return raw[::-1].hex().upper()
+def validate_brand_map(brands: list[dict]) -> None:
+    if not brands:
+        raise ValueError("Brand map is empty")
+
+    ordered = sorted(brands, key=lambda item: int(item["id"]))
+    ids = [int(item["id"]) for item in ordered]
+    if ids != list(range(len(ordered))):
+        raise ValueError("Brand IDs must be contiguous and start at zero")
+    if ordered[0]["name"] != "ELEGOO" or ordered[0]["codes"] != ["EEEEEEEE"]:
+        raise ValueError("Brand ID 0 must remain ELEGOO with code EEEEEEEE")
+    if ordered[1]["name"] != "Generic":
+        raise ValueError("Brand ID 1 must remain Generic")
+    if len(ordered) > 0xEE:
+        raise ValueError("Brand IDs would collide with the EEEEEEEE stock code")
+
+    seen_codes: set[str] = set()
+    seen_names: set[str] = set()
+    for brand in ordered:
+        brand_id = int(brand["id"])
+        name = str(brand["name"])
+        try:
+            encoded_name = name.encode("ascii")
+        except UnicodeEncodeError as exc:
+            raise ValueError(f"Brand name must be ASCII: {name!r}") from exc
+        if not encoded_name or len(encoded_name) > 31:
+            raise ValueError(f"Brand name must contain 1-31 ASCII bytes: {name!r}")
+        if name.casefold() in seen_names:
+            raise ValueError(f"Duplicate brand name: {name}")
+        seen_names.add(name.casefold())
+
+        codes = brand.get("codes", [])
+        if len(codes) != 1:
+            raise ValueError(f"Brand {name} must have exactly one CANVAS-safe code")
+        code = str(codes[0]).upper()
+        if len(code) != 8:
+            raise ValueError(f"Manufacturer code must contain exactly four bytes: {code}")
+        bytes.fromhex(code)
+        if brand_id > 0 and not code.startswith("EEEEEE"):
+            raise ValueError(
+                f"Brand {name} code {code} would be rejected by the CANVAS page-16 filter"
+            )
+        if brand_id > 0 and int(code[-2:], 16) != brand_id:
+            raise ValueError(
+                f"Brand {name} code suffix must equal its brand ID ({brand_id:02X})"
+            )
+        if code in seen_codes:
+            raise ValueError(f"Duplicate manufacturer code: {code}")
+        seen_codes.add(code)
 
 
 def manufacturer_entries(brands: list[dict]) -> list[tuple[int, int]]:
     entries: list[tuple[int, int]] = []
-    seen: set[int] = set()
     for brand in brands:
-        for code in brand.get("codes", []):
-            for candidate in {code.upper(), reversed_hex32(code)}:
-                value = int(candidate, 16)
-                if value not in seen:
-                    entries.append((value, int(brand["id"])))
-                    seen.add(value)
-    entries.sort(key=lambda item: (item[1] != 0, item[1], item[0]))
+        entries.append((int(brand["codes"][0], 16), int(brand["id"])))
     return entries
 
 
-def build_cave(brands: list[dict]) -> tuple[bytes, int, int]:
-    blob = ArmBlob(CAVE_START_VA)
+def build_manufacturer_cave(brands: list[dict]) -> bytes:
+    entries = manufacturer_entries(brands)
+    code_words = 12
+    table_va = MANUFACTURER_CAVE_START_VA + code_words * 4
+    loop_va = MANUFACTURER_CAVE_START_VA + 3 * 4
 
-    manufacturer_func_va = blob.cursor_va
-    blob.label("manufacturer_resolver")
-    for code, brand_id in manufacturer_entries(brands):
-        blob.word(enc_movw(0, code & 0xFFFF))
-        blob.word(enc_movt(0, (code >> 16) & 0xFFFF))
-        blob.word(enc_cmp_reg(1, 0))
-        blob.word(enc_mov_imm(0, brand_id, COND_EQ))
-        blob.word(enc_bx_lr(COND_EQ))
-    blob.word(enc_mov_imm(0, 1))
-    blob.word(enc_bx_lr())
+    words = [
+        enc_movw(2, table_va & 0xFFFF),
+        enc_movt(2, (table_va >> 16) & 0xFFFF),
+        enc_mov_imm(3, len(entries)),
+        enc_ldr_imm(0, 2),
+        enc_cmp_reg(1, 0),
+        enc_ldr_imm(0, 2, 4, COND_EQ),
+        enc_bx_lr(COND_EQ),
+        enc_add_imm(2, 2, 8),
+        enc_subs_imm(3, 3, 1),
+        enc_b(MANUFACTURER_CAVE_START_VA + 9 * 4, loop_va, COND_NE),
+        enc_mov_imm(0, 1),
+        enc_bx_lr(),
+    ]
+    payload = bytearray(struct.pack("<" + "I" * len(words), *words))
+    for code, brand_id in entries:
+        payload.extend(struct.pack("<II", code, brand_id))
+    return bytes(payload)
 
-    brand_func_va = blob.cursor_va
-    blob.label("brand_resolver")
-    for brand in sorted(brands, key=lambda item: int(item["id"])):
+
+def build_brand_cave(brands: list[dict]) -> bytes:
+    ordered = sorted(brands, key=lambda item: int(item["id"]))
+    max_id = int(ordered[-1]["id"])
+    table_va = BRAND_CAVE_START_VA + 6 * 4
+
+    words = [
+        enc_cmp_imm(1, max_id),
+        enc_mov_imm(1, 1, COND_HI),
+        enc_movw(2, table_va & 0xFFFF),
+        enc_movt(2, (table_va >> 16) & 0xFFFF),
+        enc_ldr_scaled_reg(0, 2, 1, 2),
+        enc_bx_lr(),
+    ]
+    payload = bytearray(struct.pack("<" + "I" * len(words), *words))
+    pointer_table_off = len(payload)
+    payload.extend(b"\0" * (len(ordered) * 4))
+
+    pointers: list[int] = []
+    for brand in ordered:
         brand_id = int(brand["id"])
-        label = f"brand_ptr_{brand_id}"
-        blob.word(enc_cmp_imm(1, brand_id))
-        blob.ldr_literal(0, label, COND_EQ)
-        blob.word(enc_bx_lr(COND_EQ))
-    blob.ldr_literal(0, "brand_ptr_1")
-    blob.word(enc_bx_lr())
-
-    for brand in sorted(brands, key=lambda item: int(item["id"])):
-        brand_id = int(brand["id"])
-        label = f"brand_ptr_{brand_id}"
         if brand_id == 0:
-            blob.label(label)
-            blob.data_u32(ORIGINAL_ELEGOO_STR_VA)
+            pointers.append(ORIGINAL_ELEGOO_STR_VA)
         elif brand_id == 1:
-            blob.label(label)
-            blob.data_u32(ORIGINAL_GENERIC_STR_VA)
+            pointers.append(ORIGINAL_GENERIC_STR_VA)
         else:
-            blob.string_label(f"brand_name_{brand_id}", brand["name"])
-            blob.label(label)
-            blob.data_u32(0)
+            while len(payload) % 4:
+                payload.append(0)
+            pointers.append(BRAND_CAVE_START_VA + len(payload))
+            payload.extend(brand["name"].encode("ascii") + b"\0")
 
-    payload = bytearray(blob.finish())
+    for index, pointer in enumerate(pointers):
+        struct.pack_into("<I", payload, pointer_table_off + index * 4, pointer)
 
-    # Fill new-brand pointer literals after string labels are known.
-    for brand in brands:
-        brand_id = int(brand["id"])
-        if brand_id <= 1:
-            continue
-        ptr_label = f"brand_ptr_{brand_id}"
-        name_label = f"brand_name_{brand_id}"
-        pointer_off = blob.labels[ptr_label] - CAVE_START_VA
-        struct.pack_into("<I", payload, pointer_off, blob.labels[name_label])
+    while len(payload) % 4:
+        payload.append(0)
+    return bytes(payload)
 
-    return bytes(payload), manufacturer_func_va, brand_func_va
+
+def write_cave(
+    data: bytearray,
+    payload: bytes,
+    start_va: int,
+    limit_va: int,
+    name: str,
+) -> int:
+    end_va = start_va + len(payload)
+    if end_va > limit_va:
+        raise SystemExit(
+            f"{name} cave is too large: ends at {end_va:#x}, limit is {limit_va:#x}"
+        )
+    start = off(start_va)
+    if any(data[start:start + len(payload)]):
+        raise SystemExit(f"{name} cave is not empty; refusing to overwrite another patch.")
+    data[start:start + len(payload)] = payload
+    return end_va
 
 
 def patch_app(path: Path) -> None:
@@ -241,26 +274,52 @@ def patch_app(path: Path) -> None:
             )
 
     brands = load_brand_map()
-    cave_payload, manufacturer_func_va, brand_func_va = build_cave(brands)
-    cave_start = off(CAVE_START_VA)
-    cave_end_va = CAVE_START_VA + len(cave_payload)
-    if cave_end_va > CAVE_LIMIT_VA:
-        raise SystemExit(f"RFID brand cave is too large: ends at {cave_end_va:#x}, limit is {CAVE_LIMIT_VA:#x}")
-    if any(data[cave_start: cave_start + len(cave_payload)]):
-        raise SystemExit("RFID brand cave is not empty; refusing to overwrite another patch.")
+    manufacturer_payload = build_manufacturer_cave(brands)
+    brand_payload = build_brand_cave(brands)
+    manufacturer_end_va = write_cave(
+        data,
+        manufacturer_payload,
+        MANUFACTURER_CAVE_START_VA,
+        MANUFACTURER_CAVE_LIMIT_VA,
+        "RFID manufacturer resolver",
+    )
+    brand_end_va = write_cave(
+        data,
+        brand_payload,
+        BRAND_CAVE_START_VA,
+        BRAND_CAVE_LIMIT_VA,
+        "RFID brand resolver",
+    )
 
-    data[cave_start: cave_start + len(cave_payload)] = cave_payload
-    write_u32(data, off(MANUFACTURER_RESOLVER_HOOK_VA), enc_b(MANUFACTURER_RESOLVER_HOOK_VA, manufacturer_func_va))
-    write_u32(data, off(BRAND_RESOLVER_HOOK_VA), enc_b(BRAND_RESOLVER_HOOK_VA, brand_func_va))
+    write_u32(
+        data,
+        off(MANUFACTURER_RESOLVER_HOOK_VA),
+        enc_b(MANUFACTURER_RESOLVER_HOOK_VA, MANUFACTURER_CAVE_START_VA),
+    )
+    write_u32(
+        data,
+        off(BRAND_RESOLVER_HOOK_VA),
+        enc_b(BRAND_RESOLVER_HOOK_VA, BRAND_CAVE_START_VA),
+    )
 
     path.write_bytes(data)
     patched_sha = hashlib.sha256(data).hexdigest()
     print(f"RFID_BRAND_SYNC patched {path}")
     print(f"  before sha256: {original_sha}")
     print(f"  after  sha256: {patched_sha}")
-    print(f"  cave: {CAVE_START_VA:#010x}-{cave_end_va - 1:#010x}")
-    print(f"  manufacturer resolver hook: {MANUFACTURER_RESOLVER_HOOK_VA:#010x} -> {manufacturer_func_va:#010x}")
-    print(f"  brand resolver hook:        {BRAND_RESOLVER_HOOK_VA:#010x} -> {brand_func_va:#010x}")
+    print(
+        f"  manufacturer cave: {MANUFACTURER_CAVE_START_VA:#010x}-"
+        f"{manufacturer_end_va - 1:#010x}"
+    )
+    print(f"  brand cave:        {BRAND_CAVE_START_VA:#010x}-{brand_end_va - 1:#010x}")
+    print(
+        f"  manufacturer resolver hook: {MANUFACTURER_RESOLVER_HOOK_VA:#010x} "
+        f"-> {MANUFACTURER_CAVE_START_VA:#010x}"
+    )
+    print(
+        f"  brand resolver hook:        {BRAND_RESOLVER_HOOK_VA:#010x} "
+        f"-> {BRAND_CAVE_START_VA:#010x}"
+    )
 
 
 def main(argv: list[str]) -> int:
