@@ -1,0 +1,65 @@
+{
+  "notes": [
+    "Manufacturer codes are four raw EPC bytes written as hex, not NDEF text.",
+    "The patch accepts both readable byte order and reversed byte order for custom tags.",
+    "Unknown manufacturer codes intentionally fall back to Generic."
+  ],
+  "brands": [
+    {
+      "id": 0,
+      "name": "ELEGOO",
+      "codes": ["EEEEEEEE"],
+      "keeps_original_tags": true
+    },
+    {
+      "id": 1,
+      "name": "Generic",
+      "codes": ["47454E52", "524E4547"]
+    },
+    {
+      "id": 2,
+      "name": "Prusament",
+      "codes": ["50525553", "53555250"]
+    },
+    {
+      "id": 3,
+      "name": "Bambu Lab",
+      "codes": ["424D424C", "4C424D42"]
+    },
+    {
+      "id": 4,
+      "name": "Plasty Mladec",
+      "codes": ["504C4D44", "444D4C50"]
+    },
+    {
+      "id": 5,
+      "name": "eSUN",
+      "codes": ["4553554E", "4E555345"]
+    },
+    {
+      "id": 6,
+      "name": "Polymaker",
+      "codes": ["504F4C59", "594C4F50"]
+    },
+    {
+      "id": 7,
+      "name": "SUNLU",
+      "codes": ["53554E4C", "4C4E5553"]
+    },
+    {
+      "id": 8,
+      "name": "Overture",
+      "codes": ["4F565452", "5254564F"]
+    },
+    {
+      "id": 9,
+      "name": "Spectrum",
+      "codes": ["53504543", "43455053"]
+    },
+    {
+      "id": 10,
+      "name": "Creality",
+      "codes": ["43524541", "41455243"]
+    }
+  ]
+}

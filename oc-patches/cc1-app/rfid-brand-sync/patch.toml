@@ -1,0 +1,4 @@
+id = "rfid_brand_sync"
+name = "RFID brand sync for CANVAS display and slicer"
+after = ["fix_end_print_hang"]
+compatible_versions = ["1.4.46"]
