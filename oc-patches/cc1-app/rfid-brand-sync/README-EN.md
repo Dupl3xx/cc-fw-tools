@@ -33,7 +33,9 @@ addresses.
 - Added a generator for the complete nine-page NTAG213 filament payload.
 - Added static audits for the main application and the CANVAS MCU firmware.
 - Added a read-only live verifier that uses SDCP `Cmd 324`.
-- Added 13 regression tests.
+- Integrated the upstream `spoof-slicer-firmware-version` patch so Elegoo
+  Slicer receives the supported version `V1.4.46`.
+- Added 15 regression tests, including a code-cave collision check.
 - Fixed `pack.sh` signing order so `cpio_item_md5` hashes the final
   `sw-description.sig`.
 
@@ -217,6 +219,18 @@ mode when the printer is running from B.
 4. Hook `0x00291c90` maps the brand ID to text.
 5. The display, RFID workflow, and SDCP response use the same resolver.
 
+Before requesting filament data, the Slicer validates the printer identity and
+firmware version. Elegoo Slicer did not accept the original OpenCentauri value
+`V0.4.0-d` as a compatible firmware, so CANVAS import was unavailable. The
+combined build reports `V1.4.46` through all three Slicer-facing paths:
+
+- UDP discovery;
+- WebSocket attributes;
+- the direct SDCP `Cmd 1` (`request attribute`) response.
+
+The real OpenCentauri version used by the local UI, logs, and OTA remains
+unchanged. Only the value sent to the Slicer is replaced.
+
 Elegoo Slicer does not read filament data from the HTTP path
 `/user-resource/filament_info`. It connects to:
 
@@ -263,6 +277,7 @@ dropdown entries.
 | `analyze_canvas_filter.py` | AMS Lite hardware filter audit |
 | `live_verify.py` | read-only live view of the same JSON used by the Slicer |
 | `test_rfid_brand_sync.py` | protocol and patcher regression tests |
+| `../spoof-slicer-firmware-version/` | compatible `V1.4.46` Slicer handshake |
 
 ## Binary map
 
@@ -270,6 +285,8 @@ dropdown entries.
   `ae693f7dc096da1f734c2972694963286cba20dc8f6afac79f8468139b613129`
 - manufacturer resolver: `0x00292014` -> cave `0x00450300`
 - brand resolver: `0x00291c90` -> cave `0x00450c40`
+- Slicer version `1.4.46`: cave `0x00451048`
+- Slicer pointer sites: `0x0036859c`, `0x0036a98c`, `0x0037e80c`
 - display resolver call: `0x0031ed3c`
 - RFID workflow resolver call: `0x00321ca0`
 - SDCP JSON resolver call: `0x0036e744`
@@ -320,11 +337,11 @@ The verified test build has these values:
 | Artifact | Value |
 | --- | --- |
 | `update.swu` size | `116045824` bytes |
-| `update.swu` SHA-256 | `8f9af4ff05fa47d09c8c5877d2b1b17692ae7f4750724d7db5bcafef1299205f` |
-| final `/app/app` SHA-256 | `109e0d13c3adebc2006e3af7e9cdcb8ea1d2df4a66760287f706f53a024912ce` |
+| `update.swu` SHA-256 | `f8d3e126134eedf9fe3201c44c2deea581dbe4547faacfd0165fc1d4fa87b7d2` |
+| final `/app/app` SHA-256 | `50714d6cab202bbbb5a1ea7468dc4f8188091272c2ec737e444c7147b938be6f` |
 | AMS Lite firmware SHA-256 | `998ba6955f1279b2360069a5e6599c01a03151f837022c79a186f4048d98a5d3` |
 
-This image passed all 13 tests, the final application audit, the AMS Lite
+This image passed all 15 tests, the final application audit, the AMS Lite
 audit, every `cpio_item_md5` entry, signature verification, and an independent
 SWU extraction. A real printer also accepted the same file in read-only
 `swupdate -c` mode with exit status 0.

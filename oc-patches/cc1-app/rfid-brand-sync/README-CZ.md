@@ -30,7 +30,9 @@ binárce se odmítne spustit, místo aby zapsal data na neověřené adresy.
 - generátor kompletního devítistránkového obsahu NTAG213;
 - statické audity aplikace a CANVAS MCU firmware;
 - živý read-only verifier používající SDCP `Cmd 324`;
-- 13 regresních testů;
+- kompatibilní integrace upstream patche `spoof-slicer-firmware-version`,
+  který Elegoo Sliceru hlásí podporovanou verzi `V1.4.46`;
+- 15 regresních testů včetně kontroly překryvu obou code caves;
 - oprava pořadí podpisu v `pack.sh`, aby `cpio_item_md5` obsahoval hash
   finálního `sw-description.sig`.
 
@@ -216,6 +218,18 @@ režim.
 4. Hook `0x00291c90` převede brand ID na text.
 5. Stejný resolver používá obrazovka, RFID dialog a SDCP odpověď pro slicer.
 
+Než Slicer požádá o filamenty, ověřuje identitu a verzi tiskárny. Původní
+OpenCentauri hodnota `V0.4.0-d` nebyla v Elegoo Sliceru přijata jako
+kompatibilní firmware a import CANVAS proto nebyl dostupný. Kombinovaný build
+ve všech třech slicerových cestách hlásí `V1.4.46`:
+
+- UDP discovery;
+- WebSocket attributes;
+- přímá SDCP odpověď na `Cmd 1` (`request attribute`).
+
+Skutečná OpenCentauri verze používaná lokálním UI, logy a OTA zůstává
+nezměněná. Patch mění pouze hodnotu odesílanou Sliceru.
+
 Elegoo Slicer nečte filament přes HTTP adresu
 `/user-resource/filament_info`. Připojuje se na:
 
@@ -267,6 +281,7 @@ To znamená:
 | `analyze_canvas_filter.py` | audit hardwarového filtru AMS Lite |
 | `live_verify.py` | živé read-only čtení stejného JSON jako Slicer |
 | `test_rfid_brand_sync.py` | regresní testy protokolu a patcheru |
+| `../spoof-slicer-firmware-version/` | kompatibilní handshake `V1.4.46` pro Slicer |
 
 ## Binární mapa
 
@@ -274,6 +289,8 @@ To znamená:
   `ae693f7dc096da1f734c2972694963286cba20dc8f6afac79f8468139b613129`
 - manufacturer resolver: `0x00292014` -> cave `0x00450300`
 - brand resolver: `0x00291c90` -> cave `0x00450c40`
+- slicerová verze `1.4.46`: cave `0x00451048`
+- slicerové pointery: `0x0036859c`, `0x0036a98c`, `0x0037e80c`
 - displej používá resolver na `0x0031ed3c`
 - RFID dialog používá resolver na `0x00321ca0`
 - SDCP JSON používá resolver na `0x0036e744`
@@ -325,11 +342,11 @@ Ověřený testovací build má tyto hodnoty:
 | Artefakt | Hodnota |
 | --- | --- |
 | `update.swu` velikost | `116045824` bajtů |
-| `update.swu` SHA-256 | `8f9af4ff05fa47d09c8c5877d2b1b17692ae7f4750724d7db5bcafef1299205f` |
-| výsledný `/app/app` SHA-256 | `109e0d13c3adebc2006e3af7e9cdcb8ea1d2df4a66760287f706f53a024912ce` |
+| `update.swu` SHA-256 | `f8d3e126134eedf9fe3201c44c2deea581dbe4547faacfd0165fc1d4fa87b7d2` |
+| výsledný `/app/app` SHA-256 | `50714d6cab202bbbb5a1ea7468dc4f8188091272c2ec737e444c7147b938be6f` |
 | AMS Lite firmware SHA-256 | `998ba6955f1279b2360069a5e6599c01a03151f837022c79a186f4048d98a5d3` |
 
-U tohoto balíčku prošlo všech 13 testů, audit finální aplikace, audit AMS Lite,
+U tohoto balíčku prošlo všech 15 testů, audit finální aplikace, audit AMS Lite,
 všechny položky `cpio_item_md5`, kontrola podpisu a nezávislé rozbalení SWU.
 Konkrétní tiskárna navíc přijala stejný soubor v read-only režimu
 `swupdate -c` s návratovým kódem 0.
