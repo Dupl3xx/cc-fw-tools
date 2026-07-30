@@ -1,3 +1,4 @@
 pycryptodome==3.21.0
 paramiko==3.5.0
 scp==0.15.0
+websockets==13.1

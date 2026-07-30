@@ -13,6 +13,7 @@ sys.path.insert(0, str(PATCH_DIR))
 
 import patch_app  # noqa: E402
 import tag_codec  # noqa: E402
+import live_verify  # noqa: E402
 
 
 class BrandMapTests(unittest.TestCase):
@@ -158,6 +159,45 @@ class BinaryPatchTests(unittest.TestCase):
         path.write_bytes(data)
         with self.assertRaises(SystemExit):
             patch_app.patch_app(path)
+
+
+class LiveVerifyTests(unittest.TestCase):
+    def test_cmd_324_request_matches_sdcp_wire_format(self) -> None:
+        request = live_verify.build_material_request(
+            "printer-id",
+            "mainboard-id",
+            request_id="request-id",
+            timestamp=123,
+        )
+        self.assertEqual(request["Id"], "printer-id")
+        self.assertEqual(request["Topic"], "sdcp/request/mainboard-id")
+        self.assertEqual(request["Data"]["Cmd"], 324)
+        self.assertEqual(request["Data"]["RequestID"], "request-id")
+        self.assertEqual(request["Data"]["MainboardID"], "mainboard-id")
+        self.assertEqual(request["Data"]["TimeStamp"], 123)
+        self.assertEqual(request["Data"]["From"], 0)
+
+    def test_tray_flattening_and_brand_expectation(self) -> None:
+        payload = {
+            "canvas_list": [
+                {
+                    "canvas_id": 0,
+                    "tray_list": [
+                        {"tray_id": 0, "brand": "ELEGOO"},
+                        {"tray_id": 1, "brand": "Prusament"},
+                    ],
+                }
+            ]
+        }
+        trays = live_verify.trays_from_payload(payload)
+        self.assertEqual(trays[1]["canvas_id"], 0)
+        self.assertTrue(live_verify.brand_matches(trays, "prusament", 1))
+        self.assertFalse(live_verify.brand_matches(trays, "Prusament", 0))
+
+    def test_material_response_requires_success_ack(self) -> None:
+        response = {"Data": {"Data": {"Ack": 7}}}
+        with self.assertRaises(RuntimeError):
+            live_verify.material_payload(response)
 
 
 if __name__ == "__main__":

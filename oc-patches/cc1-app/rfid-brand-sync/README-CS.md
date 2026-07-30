@@ -190,6 +190,22 @@ python3 oc-patches/cc1-app/rfid-brand-sync/analyze_canvas_filter.py \
   unpacked/squashfs-root/app/resources/firmware/upgrade_ams_lite_full_pack.bin
 ```
 
+Živá kontrola používá stejné SDCP discovery a `Cmd 324` jako Elegoo Slicer,
+ale nic v tiskárně nemění:
+
+```bash
+python3 oc-patches/cc1-app/rfid-brand-sync/live_verify.py 192.168.1.18
+```
+
+Po načtení testovacího tagu lze konkrétní tray ověřit automaticky:
+
+```bash
+python3 oc-patches/cc1-app/rfid-brand-sync/live_verify.py \
+  192.168.1.18 \
+  --tray 0 \
+  --expect-brand Prusament
+```
+
 Živý test po instalaci musí ověřit:
 
 1. Originální ELEGOO tag stále pípne a zobrazí ELEGOO.
