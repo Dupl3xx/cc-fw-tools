@@ -8,6 +8,18 @@
         "elegoo_slicer": "1.5.2.2",
         "nozzle": "0.4"
     },
+    "firmware_identity": {
+        "field": "FirmwareVersion",
+        "rejected_opencentauri_example": "V0.4.0-d",
+        "reported_to_slicer": "V1.4.46",
+        "preserves_local_version": true,
+        "patch": "../../oc-patches/cc1-app/spoof-slicer-firmware-version",
+        "paths": [
+            "UDP discovery",
+            "WebSocket attributes",
+            "SDCP Cmd 1 request attribute"
+        ]
+    },
     "profiles": [
         {
             "name": "Prusament PLA @ECC",

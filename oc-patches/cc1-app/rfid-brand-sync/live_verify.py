@@ -105,6 +105,11 @@ def brand_matches(
     )
 
 
+def firmware_version(discovery: dict[str, Any]) -> str:
+    details = discovery.get("Data", {})
+    return str(details.get("FirmwareVersion", "")).strip()
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Read CANVAS filament data through the same SDCP Cmd 324 used by Elegoo Slicer."
@@ -113,6 +118,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout", type=float, default=5.0, help="Network timeout in seconds")
     parser.add_argument("--json", action="store_true", help="Print the complete response as JSON")
     parser.add_argument("--expect-brand", help="Fail unless this brand is present")
+    parser.add_argument(
+        "--expect-firmware-version",
+        help="Fail unless discovery reports this exact FirmwareVersion",
+    )
     parser.add_argument("--tray", type=int, help="Limit --expect-brand to one tray ID")
     return parser
 
@@ -152,9 +161,21 @@ def main() -> int:
         location = f" in tray {args.tray}" if args.tray is not None else ""
         print(f"FAIL: brand {args.expect_brand!r} was not found{location}")
         return 1
+    actual_version = firmware_version(discovery)
+    if (
+        args.expect_firmware_version
+        and actual_version != args.expect_firmware_version
+    ):
+        print(
+            "FAIL: FirmwareVersion "
+            f"{actual_version!r} does not match {args.expect_firmware_version!r}"
+        )
+        return 1
     if args.expect_brand:
         location = f" in tray {args.tray}" if args.tray is not None else ""
         print(f"PASS: brand {args.expect_brand!r} found{location}")
+    if args.expect_firmware_version:
+        print(f"PASS: FirmwareVersion is {actual_version!r}")
     return 0
 
 

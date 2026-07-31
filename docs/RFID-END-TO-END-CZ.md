@@ -21,6 +21,26 @@ Sliceru.
 Firmware `1.4.49` není tímto binárním patchem podporovaný. Patcher kontroluje
 hash a původní instrukce aplikace a neznámý firmware odmítne.
 
+## Oprava identity firmware pro Elegoo Slicer
+
+Problém nebyl v uživatelském názvu tiskárny `Centauri Carbon`, ale v poli
+SDCP `FirmwareVersion`. OpenCentauri posílal například `V0.4.0-d`; Elegoo
+Slicer tuto hodnotu nevyhodnotil jako podporovaný firmware a tiskárnu proto
+nepustil k synchronizaci CANVAS.
+
+Patch `spoof-slicer-firmware-version` ve všech cestách určených pro Slicer
+hlásí `V1.4.46`:
+
+- UDP discovery při hledání tiskárny v síti;
+- WebSocket attributes po připojení;
+- přímá SDCP odpověď na `Cmd 1`.
+
+Skutečný OpenCentauri řetězec se nemění a nadále jej používá lokální UI, logy
+a OTA. Edice `firmware-editions/patched` obsahuje
+`SPOOF_SLICER_FIRMWARE_VERSION=true` a pořadí `after = ["rfid_brand_sync"]`
+zajišťuje, že se oba binární patche nepřekryjí. Technické podrobnosti jsou v
+[českém popisu patche](../oc-patches/cc1-app/spoof-slicer-firmware-version/README-CZ.md).
+
 ## Co je součástí repozitáře
 
 ### Firmware
@@ -208,7 +228,8 @@ Kontrola tiskárny bez změny jejího stavu:
 python3 oc-patches/cc1-app/rfid-brand-sync/live_verify.py \
   IP_TISKARNY \
   --tray 1 \
-  --expect-brand Prusament
+  --expect-brand Prusament \
+  --expect-firmware-version V1.4.46
 ```
 
 V Elegoo Sliceru otevřete **Synchronizovat filamenty s MMS** a potvrďte
@@ -251,6 +272,7 @@ To nijak nemění strukturu RFID tagu ani firmware manufacturer ID.
 | `oc-patches/cc1-app/rfid-brand-sync/material_map.json` | materiály, podtypy a teploty |
 | `oc-patches/cc1-app/rfid-brand-sync/generate_tag.py` | generátor NFC příkazů |
 | `oc-patches/cc1-app/rfid-brand-sync/live_verify.py` | kontrola SDCP `Cmd 324` |
+| `oc-patches/cc1-app/spoof-slicer-firmware-version/` | identita `V1.4.46` pro Slicer |
 | `TOOLS/elegoo-slicer-rfid-sync/profiles/Prusament PLA @ECC.json` | profil sliceru |
 | `TOOLS/elegoo-slicer-rfid-sync/Install-ElegooSlicerRfidSync.ps1` | instalace |
 | `TOOLS/elegoo-slicer-rfid-sync/Test-ElegooSlicerRfidSync.ps1` | kontrola |
@@ -258,7 +280,7 @@ To nijak nemění strukturu RFID tagu ani firmware manufacturer ID.
 
 ## Stav ověření
 
-- 15 regresních testů firmware patche: úspěšné;
+- 17 regresních testů firmware patche: úspěšné;
 - JSON a PowerShell syntaxe: úspěšné;
 - opakovaná instalace: idempotentní;
 - skutečný RFID scan Prusamentu na tiskárně: úspěšný;

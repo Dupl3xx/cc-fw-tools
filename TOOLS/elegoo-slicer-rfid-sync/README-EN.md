@@ -9,6 +9,20 @@ OpenCentauri `0.4.0`.
 The firmware and NFC writing procedure is covered by the
 [complete English guide](../../docs/RFID-END-TO-END-EN.md).
 
+## Why the printer was originally invisible
+
+The blocking value was not the user-visible printer name. It was the SDCP
+`FirmwareVersion` field. Elegoo Slicer rejected the OpenCentauri value
+`V0.4.0-d` and therefore did not offer filament import. The firmware patch now
+reports `V1.4.46` only to the Slicer through UDP discovery, WebSocket
+attributes, and SDCP `Cmd 1`. The real OpenCentauri version remains available
+to the display, logs, and OTA code.
+
+The `patched` edition enables this fix with
+`SPOOF_SLICER_FIRMWARE_VERSION=true`. Its
+[technical documentation](../../oc-patches/cc1-app/spoof-slicer-firmware-version/README.md)
+is stored next to the implementation.
+
 ## Why a user profile is not enough
 
 MMS synchronization only accepts a compatible system base profile with the

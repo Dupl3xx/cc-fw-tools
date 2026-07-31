@@ -9,6 +9,19 @@ Sliceru. Je ověřený s Elegoo Slicerem `1.5.2.2`, tiskárnou Centauri Carbon
 Celý postup včetně firmware a zápisu NFC je v
 [kompletním českém návodu](../../docs/RFID-END-TO-END-CZ.md).
 
+## Proč tiskárna původně nebyla vidět
+
+Nešlo o uživatelský název tiskárny, ale o pole SDCP `FirmwareVersion`.
+Elegoo Slicer odmítl OpenCentauri hodnotu `V0.4.0-d`, a proto nenabídl import
+filamentů. Firmware patch nyní pouze vůči Sliceru hlásí `V1.4.46` přes UDP
+discovery, WebSocket attributes a SDCP `Cmd 1`. Skutečná verze OpenCentauri
+pro displej, logy a OTA zůstává zachovaná.
+
+Patch je součástí edice `patched` jako
+`SPOOF_SLICER_FIRMWARE_VERSION=true`. Jeho
+[český technický popis](../../oc-patches/cc1-app/spoof-slicer-firmware-version/README-CZ.md)
+je uložený přímo u implementace.
+
 ## Proč samotný profil nestačí
 
 Slicer přijme při synchronizaci MMS pouze kompatibilní systémový základní

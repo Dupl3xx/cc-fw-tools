@@ -21,6 +21,26 @@ in Elegoo Slicer.
 Firmware `1.4.49` is not supported by this binary patch. The patcher validates
 the application hash and original instructions and refuses unknown firmware.
 
+## Elegoo Slicer firmware identity fix
+
+The problem was not the user-visible `Centauri Carbon` printer name. It was
+the SDCP `FirmwareVersion` field. OpenCentauri reported a value such as
+`V0.4.0-d`; Elegoo Slicer did not recognize it as supported firmware and
+therefore did not allow CANVAS synchronization.
+
+The `spoof-slicer-firmware-version` patch reports `V1.4.46` through every
+Slicer-facing path:
+
+- UDP discovery while locating the printer;
+- WebSocket attributes after connecting;
+- the direct SDCP `Cmd 1` response.
+
+The real OpenCentauri version string remains unchanged for the local UI, logs,
+and OTA. The `firmware-editions/patched` edition enables
+`SPOOF_SLICER_FIRMWARE_VERSION=true`, while `after = ["rfid_brand_sync"]`
+keeps the two binary patches from overlapping. See the
+[technical patch documentation](../oc-patches/cc1-app/spoof-slicer-firmware-version/README.md).
+
 ## Repository contents
 
 ### Firmware
@@ -212,7 +232,8 @@ Read-only printer verification:
 python3 oc-patches/cc1-app/rfid-brand-sync/live_verify.py \
   PRINTER_IP \
   --tray 1 \
-  --expect-brand Prusament
+  --expect-brand Prusament \
+  --expect-firmware-version V1.4.46
 ```
 
 In Elegoo Slicer, open **Sync filaments with MMS** and confirm **Sync**. The
@@ -255,6 +276,7 @@ This does not change the RFID layout or firmware manufacturer ID.
 | `oc-patches/cc1-app/rfid-brand-sync/material_map.json` | materials, subtypes, temperatures |
 | `oc-patches/cc1-app/rfid-brand-sync/generate_tag.py` | NFC command generator |
 | `oc-patches/cc1-app/rfid-brand-sync/live_verify.py` | SDCP `Cmd 324` validator |
+| `oc-patches/cc1-app/spoof-slicer-firmware-version/` | Slicer-facing `V1.4.46` identity |
 | `TOOLS/elegoo-slicer-rfid-sync/profiles/Prusament PLA @ECC.json` | Slicer profile |
 | `TOOLS/elegoo-slicer-rfid-sync/Install-ElegooSlicerRfidSync.ps1` | installation |
 | `TOOLS/elegoo-slicer-rfid-sync/Test-ElegooSlicerRfidSync.ps1` | validation |
@@ -262,7 +284,7 @@ This does not change the RFID layout or firmware manufacturer ID.
 
 ## Verification status
 
-- 15 firmware regression tests: passed;
+- 17 firmware regression tests: passed;
 - JSON and PowerShell syntax: passed;
 - repeated installation: idempotent;
 - real Prusament RFID scan on the printer: passed;

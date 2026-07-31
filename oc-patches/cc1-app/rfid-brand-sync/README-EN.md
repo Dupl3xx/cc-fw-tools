@@ -38,7 +38,8 @@ addresses.
 - Added a read-only live verifier that uses SDCP `Cmd 324`.
 - Integrated the upstream `spoof-slicer-firmware-version` patch so Elegoo
   Slicer receives the supported version `V1.4.46`.
-- Added 15 regression tests, including a code-cave collision check.
+- Added 17 regression tests, including code-cave collision and final-edition
+  Slicer identity checks.
 - Fixed `pack.sh` signing order so `cpio_item_md5` hashes the final
   `sw-description.sig`.
 
@@ -340,7 +341,8 @@ Verify one expected brand in one tray:
 python3 oc-patches/cc1-app/rfid-brand-sync/live_verify.py \
   PRINTER_IP \
   --tray 0 \
-  --expect-brand Prusament
+  --expect-brand Prusament \
+  --expect-firmware-version V1.4.46
 ```
 
 The verified test build has these values:
@@ -352,7 +354,7 @@ The verified test build has these values:
 | final `/app/app` SHA-256 | `50714d6cab202bbbb5a1ea7468dc4f8188091272c2ec737e444c7147b938be6f` |
 | AMS Lite firmware SHA-256 | `998ba6955f1279b2360069a5e6599c01a03151f837022c79a186f4048d98a5d3` |
 
-This image passed all 15 tests, the final application audit, the AMS Lite
+This image passed all 17 tests, the final application audit, the AMS Lite
 audit, every `cpio_item_md5` entry, signature verification, and an independent
 SWU extraction. A real printer also accepted the same file in read-only
 `swupdate -c` mode with exit status 0.

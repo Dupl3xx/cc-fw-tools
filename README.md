@@ -21,6 +21,8 @@ are shared by the printer display and Elegoo Slicer.
 - [English documentation](oc-patches/cc1-app/rfid-brand-sync/README-EN.md)
 - [Kompletni navod: tiskarna, RFID a Slicer](docs/RFID-END-TO-END-CZ.md)
 - [Complete guide: printer, RFID, and Slicer](docs/RFID-END-TO-END-EN.md)
+- [Oprava identity firmware pro Slicer](oc-patches/cc1-app/spoof-slicer-firmware-version/README-CZ.md)
+- [Slicer firmware identity fix](oc-patches/cc1-app/spoof-slicer-firmware-version/README.md)
 - [Elegoo Slicer profile installer](TOOLS/elegoo-slicer-rfid-sync/README-EN.md)
 
 This patch is not compatible with ELEGOO firmware `1.4.49`. The guarded

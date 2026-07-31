@@ -1,5 +1,7 @@
 # Spoof Slicer Firmware Version (CC1 1.4.46)
 
+[Česky](README-CZ.md) | [English](README.md)
+
 ## Purpose
 
 Override the firmware version reported to ElegooSlicer in SDCP attribute responses

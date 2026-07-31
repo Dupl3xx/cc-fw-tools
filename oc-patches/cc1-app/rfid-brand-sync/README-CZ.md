@@ -35,7 +35,8 @@ binárce se odmítne spustit, místo aby zapsal data na neověřené adresy.
 - živý read-only verifier používající SDCP `Cmd 324`;
 - kompatibilní integrace upstream patche `spoof-slicer-firmware-version`,
   který Elegoo Sliceru hlásí podporovanou verzi `V1.4.46`;
-- 15 regresních testů včetně kontroly překryvu obou code caves;
+- 17 regresních testů včetně kontroly překryvu obou code caves a aktivace
+  opravy identity Sliceru ve výsledné edici;
 - oprava pořadí podpisu v `pack.sh`, aby `cpio_item_md5` obsahoval hash
   finálního `sw-description.sig`.
 
@@ -344,7 +345,8 @@ Po načtení testovacího tagu lze konkrétní tray ověřit automaticky:
 python3 oc-patches/cc1-app/rfid-brand-sync/live_verify.py \
   192.168.1.18 \
   --tray 0 \
-  --expect-brand Prusament
+  --expect-brand Prusament \
+  --expect-firmware-version V1.4.46
 ```
 
 Ověřený testovací build má tyto hodnoty:
@@ -356,7 +358,7 @@ Ověřený testovací build má tyto hodnoty:
 | výsledný `/app/app` SHA-256 | `50714d6cab202bbbb5a1ea7468dc4f8188091272c2ec737e444c7147b938be6f` |
 | AMS Lite firmware SHA-256 | `998ba6955f1279b2360069a5e6599c01a03151f837022c79a186f4048d98a5d3` |
 
-U tohoto balíčku prošlo všech 15 testů, audit finální aplikace, audit AMS Lite,
+U tohoto balíčku prošlo všech 17 testů, audit finální aplikace, audit AMS Lite,
 všechny položky `cpio_item_md5`, kontrola podpisu a nezávislé rozbalení SWU.
 Konkrétní tiskárna navíc přijala stejný soubor v read-only režimu
 `swupdate -c` s návratovým kódem 0.

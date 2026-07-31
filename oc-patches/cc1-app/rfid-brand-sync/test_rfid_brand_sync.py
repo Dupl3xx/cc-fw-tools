@@ -7,12 +7,15 @@ import struct
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 
 
 PATCH_DIR = Path(__file__).resolve().parent
 SPOOF_PATCH = PATCH_DIR.parent / "spoof-slicer-firmware-version" / "patch.py"
+SPOOF_PATCH_CONFIG = SPOOF_PATCH.with_name("patch.toml")
+PATCHED_EDITION = PATCH_DIR.parents[2] / "firmware-editions" / "patched"
 SPOOF_CAVE_VA = 0x00451048
 SPOOF_SITES = (0x0036859C, 0x0036A98C, 0x0037E80C)
 SPOOF_ORIGINAL = bytes.fromhex("38 3a 09 e3 40 30 40 e3")
@@ -25,6 +28,19 @@ import live_verify  # noqa: E402
 
 
 class BrandMapTests(unittest.TestCase):
+    def test_patched_edition_enables_complete_slicer_identity_fix(self) -> None:
+        edition = PATCHED_EDITION.read_text(encoding="utf-8")
+        self.assertRegex(edition, r"(?m)^RFID_BRAND_SYNC=true$")
+        self.assertRegex(
+            edition,
+            r"(?m)^SPOOF_SLICER_FIRMWARE_VERSION=true$",
+        )
+
+        with SPOOF_PATCH_CONFIG.open("rb") as handle:
+            config = tomllib.load(handle)
+        self.assertEqual(config["compatible_versions"], ["1.4.46"])
+        self.assertIn("rfid_brand_sync", config["after"])
+
     def test_map_is_valid_and_contiguous(self) -> None:
         brands = patch_app.load_brand_map()
         self.assertEqual([item["id"] for item in brands], list(range(len(brands))))
@@ -259,6 +275,14 @@ class BinaryPatchTests(unittest.TestCase):
 
 
 class LiveVerifyTests(unittest.TestCase):
+    def test_firmware_version_is_read_from_discovery_data(self) -> None:
+        discovery = {"Data": {"FirmwareVersion": "V1.4.46"}}
+        self.assertEqual(
+            live_verify.firmware_version(discovery),
+            "V1.4.46",
+        )
+        self.assertEqual(live_verify.firmware_version({"Data": {}}), "")
+
     def test_cmd_324_request_matches_sdcp_wire_format(self) -> None:
         request = live_verify.build_material_request(
             "printer-id",

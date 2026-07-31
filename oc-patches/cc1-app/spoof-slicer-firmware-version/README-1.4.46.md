@@ -1,5 +1,7 @@
 # `spoof-slicer-firmware-version` for CC1 1.4.46
 
+[Česky](README-CZ.md) | [English](README-1.4.46.md)
+
 ## Stock behavior
 
 The SDCP attribute builders for UDP discovery, WebSocket attributes, and direct `request attribute` load the firmware version from the literal address `0x00409a38` (file offset `0x003f9a38`). The same address is also used elsewhere for logs, UI, and OTA checks, so replacing it directly would have side effects.
