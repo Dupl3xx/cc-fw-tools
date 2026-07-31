@@ -2,6 +2,9 @@
 
 [Česky](README-CZ.md) | [English](README-EN.md)
 
+Kompletní postup pro novou tiskárnu, nový počítač, zápis tagu a obnovu je v
+[end-to-end návodu](../../../docs/RFID-END-TO-END-CZ.md).
+
 Patch je určený pro Centauri Carbon 1, stock firmware `1.4.46` a OpenCentauri
 `0.4.0`. Přidává 68 vlastních názvů značek k původním položkám ELEGOO a
 Generic. Nemění typy materiálu ani teplotní tabulky tiskárny.

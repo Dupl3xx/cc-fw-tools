@@ -6,6 +6,9 @@ This add-on fixes custom CANVAS RFID brand imports in Elegoo Slicer. It is
 verified with Elegoo Slicer `1.5.2.2`, Centauri Carbon firmware `1.4.46`, and
 OpenCentauri `0.4.0`.
 
+The firmware and NFC writing procedure is covered by the
+[complete English guide](../../docs/RFID-END-TO-END-EN.md).
+
 ## Why a user profile is not enough
 
 MMS synchronization only accepts a compatible system base profile with the
@@ -56,6 +59,29 @@ Backups are stored under:
 An Elegoo Slicer update may replace files under `Program Files`. Run the
 installer again after updating. The installer safely refuses versions other
 than `1.5.2.2`.
+
+## Validation
+
+Run the read-only validator after installation:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File `
+  .\TOOLS\elegoo-slicer-rfid-sync\Test-ElegooSlicerRfidSync.ps1
+```
+
+It checks both indexes, both profiles, internal IDs, Generic PETG
+compatibility, and the MMS JavaScript mapping.
+
+## Restore the pre-install state
+
+Close the Slicer and restore the state from before the latest installer run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File `
+  .\TOOLS\elegoo-slicer-rfid-sync\Uninstall-ElegooSlicerRfidSync.ps1
+```
+
+Use `-BackupPath` to select a specific older backup.
 
 ## Verified data flow
 

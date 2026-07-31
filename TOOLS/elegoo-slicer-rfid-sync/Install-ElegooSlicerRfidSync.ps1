@@ -184,22 +184,51 @@ New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
 
 $backupFiles = @(
     $programIndex,
+    $programProfile,
     $programGenericPetg,
     $filamentSyncJs,
     $dataIndex,
+    $dataProfile,
     $dataGenericPetg
 )
-foreach ($path in $backupFiles) {
-    $safeName = ($path -replace ':', '' -replace '[\\/]', '__')
-    Copy-Item -LiteralPath $path -Destination (Join-Path $backupRoot $safeName) -Force
-}
 
 $userProfile = Join-Path $ElegooDataRoot 'user\default\filament\base\Prusament PLA @ECC.json'
 $userInfo = Join-Path $ElegooDataRoot 'user\default\filament\base\Prusament PLA @ECC.info'
+$backupFiles += @($userProfile, $userInfo)
+$manifestFiles = @()
+foreach ($path in $backupFiles) {
+    if (Test-Path -LiteralPath $path) {
+        $safeName = ($path -replace ':', '' -replace '[\\/]', '__')
+        Copy-Item -LiteralPath $path -Destination (Join-Path $backupRoot $safeName) -Force
+        $manifestFiles += [pscustomobject]@{
+            source = $path
+            backup = $safeName
+        }
+    }
+}
+
+$manifest = [ordered]@{
+    schema = 1
+    created_at = (Get-Date).ToString('o')
+    slicer_version = $version
+    slicer_root = $resolvedSlicerRoot
+    data_root = $ElegooDataRoot
+    files = $manifestFiles
+}
+Save-JsonFile -Path (Join-Path $backupRoot 'backup-manifest.json') -Value $manifest
+
 foreach ($path in @($userProfile, $userInfo)) {
     if (Test-Path -LiteralPath $path) {
-        Copy-Item -LiteralPath $path -Destination $backupRoot -Force
         Remove-Item -LiteralPath $path -Force
+    }
+}
+
+foreach ($directory in @(
+    (Split-Path -Parent $programProfile),
+    (Split-Path -Parent $dataProfile)
+)) {
+    if (-not (Test-Path -LiteralPath $directory)) {
+        New-Item -ItemType Directory -Path $directory -Force | Out-Null
     }
 }
 

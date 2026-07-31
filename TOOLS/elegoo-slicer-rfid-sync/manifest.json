@@ -1,0 +1,35 @@
+{
+    "schema": 1,
+    "verified": {
+        "printer": "ELEGOO Centauri Carbon 1",
+        "canvas": true,
+        "base_firmware": "1.4.46",
+        "opencentauri": "0.4.0",
+        "elegoo_slicer": "1.5.2.2",
+        "nozzle": "0.4"
+    },
+    "profiles": [
+        {
+            "name": "Prusament PLA @ECC",
+            "vendor": "Prusament",
+            "material": "PLA",
+            "filament_id": "PRSPLA00",
+            "setting_id": "PRSPLA00",
+            "path": "profiles/Prusament PLA @ECC.json"
+        }
+    ],
+    "fallback_mappings": [
+        {
+            "vendor": "Generic",
+            "material": "PETG",
+            "profile": "Generic PETG @Elegoo",
+            "filament_id": "GPETGB00",
+            "setting_id": "GFSG99"
+        }
+    ],
+    "scripts": {
+        "install": "Install-ElegooSlicerRfidSync.ps1",
+        "test": "Test-ElegooSlicerRfidSync.ps1",
+        "uninstall": "Uninstall-ElegooSlicerRfidSync.ps1"
+    }
+}

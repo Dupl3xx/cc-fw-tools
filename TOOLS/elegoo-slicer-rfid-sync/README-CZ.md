@@ -6,6 +6,9 @@ Tento doplněk opravuje import vlastních RFID značek z CANVAS do Elegoo
 Sliceru. Je ověřený s Elegoo Slicerem `1.5.2.2`, tiskárnou Centauri Carbon
 `1.4.46` a OpenCentauri `0.4.0`.
 
+Celý postup včetně firmware a zápisu NFC je v
+[kompletním českém návodu](../../docs/RFID-END-TO-END-CZ.md).
+
 ## Proč samotný profil nestačí
 
 Slicer přijme při synchronizaci MMS pouze kompatibilní systémový základní
@@ -56,6 +59,29 @@ Zálohy jsou v:
 Aktualizace Elegoo Sliceru může soubory v `Program Files` přepsat. Po
 aktualizaci spusťte instalátor znovu. Pro jinou verzi než `1.5.2.2` instalátor
 z bezpečnostních důvodů skončí bez změn.
+
+## Kontrola
+
+Po instalaci spusťte read-only kontrolu:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File `
+  .\TOOLS\elegoo-slicer-rfid-sync\Test-ElegooSlicerRfidSync.ps1
+```
+
+Kontroluje oba indexy, oba profily, interní ID, kompatibilitu Generic PETG a
+JavaScriptové mapování MMS.
+
+## Obnova stavu před instalací
+
+Zavřete slicer a obnovte stav před posledním během instalátoru:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File `
+  .\TOOLS\elegoo-slicer-rfid-sync\Uninstall-ElegooSlicerRfidSync.ps1
+```
+
+Konkrétní starší zálohu lze vybrat parametrem `-BackupPath`.
 
 ## Ověřený přenos
 

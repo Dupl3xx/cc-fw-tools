@@ -2,6 +2,9 @@
 
 [Cesky](README-CZ.md) | [English](README-EN.md)
 
+The complete new-printer, new-PC, tag-writing, and restoration procedure is in
+the [end-to-end guide](../../../docs/RFID-END-TO-END-EN.md).
+
 This patch targets the ELEGOO Centauri Carbon 1 running stock firmware
 `1.4.46` as the base for OpenCentauri `0.4.0`. It adds 68 custom brand names
 while retaining the original ELEGOO and Generic entries. It does not replace
