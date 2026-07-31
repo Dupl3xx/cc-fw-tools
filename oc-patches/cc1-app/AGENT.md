@@ -4,7 +4,10 @@
 
 ## Executive Summary
 
-The 1.4.46 app binary uses four **injected code caves** (new trampolines written into zero-filled executable space) and several **in-place patches** (single instructions or existing function bodies modified directly). The four caves are:
+The 1.4.46 app binary uses several **injected code caves** (new trampolines
+written into zero-filled executable space) and several **in-place patches**
+(single instructions or existing function bodies modified directly). The
+allocated cave regions are:
 
 | Cave Address | Used By | Size | End |
 |--------------|---------|------|-----|
@@ -13,8 +16,15 @@ The 1.4.46 app binary uses four **injected code caves** (new trampolines written
 | `0x00450a00` | `report-filament-usage` | 0xc4 bytes | `0x00450ac3` |
 | `0x00450b00` | `fix-end-print-hang` | 0x80 bytes reserved, 0x44 used | `0x00450b7f` |
 | `0x00450c00` | `fix-end-print-hang` command string | 0x40 bytes reserved | `0x00450c3f` |
+| `0x00450300` | `rfid-brand-sync` manufacturer resolver/table | 0x260 bytes | `0x0045055f` |
+| `0x00450c40` | `rfid-brand-sync` brand resolver/strings | 0x404 bytes | `0x00451043` |
+| `0x00451048` | `spoof-slicer-firmware-version` version string | 7 bytes | `0x0045104e` |
 
-There are **no other code caves** in the current 1.4.46 patch set. The next available zero-filled region after `0x00450c3f` is unallocated; any new patch needing a cave should claim from there and document it here.
+There are **no other code caves** in the current 1.4.46 patch set. The stock
+zero run `0x00450300`-`0x004508d7` remains free after `0x0045055f`, and the
+stock zero run `0x00450903`-`0x004510d7` remains free only in the gaps not
+claimed by the patches listed above. Always check exact intervals instead of
+assuming that the next address is available.
 
 ## Patch-by-Patch Breakdown
 
@@ -60,6 +70,19 @@ There are **no other code caves** in the current 1.4.46 patch set. The next avai
 **Resume:** `0x0035dbac`
 **Interaction note:** Same `sub_35cf58` function as `disable-exhaust-fan-patch`, but no overlapping bytes (`disable_exhaust_fan` uses `0x0035d508` and `0x0035d5d4`).
 
+### `rfid-brand-sync` (1.4.46 only)
+**Type:** Branch-hook trampoline cave + brand strings
+**Caves:**
+- `0x00450300` — `0x0045055f`: compact manufacturer lookup and 70-entry table
+- `0x00450c40` — `0x00451043`: indexed brand resolver, pointer table, and strings
+**Purpose:** Resolve CANVAS-safe custom RFID manufacturer codes to
+display/slicer brand names while keeping ELEGOO tags mapped to the stock
+`ELEGOO` entry. Every custom code starts with `EEEEEE`, so tag page 16 remains
+`36EEEEEE` and passes the AMS Lite hardware identify-page filter.
+**Branch hooks:**
+- `0x00292014` → `0x00450300` (manufacturer code to brand ID resolver)
+- `0x00291c90` → `0x00450c40` (brand ID to brand string resolver)
+
 ### `add-chamber-light-gcode-patch` (1.4.46)
 **Type:** Existing function body rewrite
 - `0x000a5b38` — `M8212` handler `sub_a5b38` rewritten in-place
@@ -99,6 +122,19 @@ There are **no other code caves** in the current 1.4.46 patch set. The next avai
 - `0x00341700`, `0x0034b8c4`, `0x0034b8dc`, `0x0034be8c`, `0x0034bfac`
 **No cave used.**
 
+### `spoof-slicer-firmware-version` (1.4.46)
+**Type:** In-place pointer repoint + data string cave
+**Cave:** `0x00451048` — `0x0045104e` (`1.4.46\0`)
+**In-place patches:**
+- `0x0035859c` (`VA 0x0036859c`): `movw r3, #0x9a38; movt r3, #0x40` → `movw r3, #0x1048; movt r3, #0x45`
+- `0x0035a98c` (`VA 0x0036a98c`): same instruction change
+- `0x0036e80c` (`VA 0x0037e80c`): same instruction change
+**Purpose:** Reports `1.4.46` to the slicer via UDP discovery, WebSocket attribute topic, and direct request-attribute responses, while leaving the real version string at `0x00409a38` (logs/UI/OTA) untouched.
+**Interaction note:** The upstream `0x00450e00` location overlaps the
+`rfid-brand-sync` string table. This combined build deliberately relocates the
+seven-byte version string to the aligned free gap immediately after the RFID
+payload.
+
 ### `set-firmware-version-patch`
 **Enabled for 1.1.40 and 1.4.46.** Replaces the stock firmware version string in `app/app` with the OpenCentauri git-describe version.
 - 1.1.40: offset `0x34F6E8`
@@ -112,4 +148,4 @@ There are **no other code caves** in the current 1.4.46 patch set. The next avai
 3. **Always run `patch_planner.py 1.4.46 --dry-run` after adding a new patch.** It shows the full ordered patch chain. Then build with `sudo ./build.sh 1.4.46` and disassemble the final app to verify all cave addresses.
 4. **Document new caves in this file.** If you add a patch that uses a code cave, append its address range to the table above and update the summary.
 5. **Prefer in-place single-instruction patches when possible.** If the fix is just forcing a constant or removing a branch, patch the single instruction directly (like `fix-singlecolor-filament-selection`). This avoids cave contention entirely.
-6. **Claim the next free cave from the top.** The current top of the used cave space is `0x00450ac3`. If you need a new cave, check the stock binary for zero-filled executable space above that address and claim the next block. Document the exact start and end in your patch README and in this file.
+6. **Claim the next free cave from the top.** The current top of the used cave space is `0x00451043`. If you need a new cave, inspect all documented ranges and check the stock binary for zero-filled executable space before claiming the next block. Document the exact start and end in your patch README and in this file.

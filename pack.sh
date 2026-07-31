@@ -60,7 +60,11 @@ for i in $FILES; do
   fi
 done
 
-# create cpio_item_md5
+# sign the file sw-description
+rm -f sw-description.sig
+openssl dgst -sha256 -sign ../RESOURCES/KEYS/swupdate_private.pem sw-description >sw-description.sig
+
+# create cpio_item_md5 from the final signed files
 rm -f cpio_item_md5
 for i in $FILES; do
   if [ "$i" != "cpio_item_md5" ]; then
@@ -68,10 +72,6 @@ for i in $FILES; do
     echo "$hash" >>cpio_item_md5
   fi
 done
-
-# sign the file sw-description
-rm -f sw-description.sig
-openssl dgst -sha256 -sign ../RESOURCES/KEYS/swupdate_private.pem sw-description >sw-description.sig
 
 # pack the input files as update.swu
 for i in $FILES; do echo "$i"; done | cpio -ov -H crc >../update/update.swu
