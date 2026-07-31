@@ -257,12 +257,20 @@ Elegoo Slicer receives `brand` as the tray vendor. Automatic profile matching
 primarily uses the standardized filament name and type; the vendor is a
 secondary criterion. This patch does not add or modify Slicer print profiles.
 
+Elegoo Slicer `1.5.2.2` also accepts only system base profiles with an exact
+internal ID during MMS synchronization. The repository therefore includes a
+separate [Windows profile installer](../../../TOOLS/elegoo-slicer-rfid-sync/README-EN.md).
+It adds `Prusament PLA @ECC` with ID `PRSPLA00` and fixes Generic PETG
+compatibility for Centauri Carbon.
+
 After an RFID scan, the display can show custom names such as Prusament, Bambu
 Lab, or Plasty Mladec as the current brand value. The stock dropdown still
 contains only the two physically constructed options, ELEGOO and Generic.
 Opening that dropdown and selecting an item overwrites the RFID-loaded brand.
 The 70 brands are therefore RFID-readable values, not 70 manually selectable
-dropdown entries.
+dropdown entries. The firmware patch itself does not modify print profiles;
+the companion Windows installer currently adds the verified Prusament PLA
+profile.
 
 ## Patch files
 

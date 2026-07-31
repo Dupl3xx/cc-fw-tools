@@ -257,6 +257,12 @@ profilu se v Elegoo Sliceru rozhoduje hlavně podle názvu a typu filamentu;
 značka je až pomocné kritérium. To je chování sliceru, nikoli omezení přenosu
 z tiskárny.
 
+Elegoo Slicer `1.5.2.2` navíc při MMS synchronizaci přijímá pouze systémové
+základní profily s přesným interním ID. Pro Prusament PLA je proto součástí
+repozitáře samostatný [instalátor profilů pro Windows](../../../TOOLS/elegoo-slicer-rfid-sync/README-CZ.md).
+Přidá profil `Prusament PLA @ECC` s ID `PRSPLA00` a opraví také kompatibilitu
+Generic PETG pro Centauri Carbon.
+
 Na displeji se po načtení RFID zobrazí nový název v aktuálně vybrané položce.
 Ručně otevřený stock dropdown má nadále fyzicky vytvořené jen dvě původní
 položky ELEGOO a Generic. Výběr jiné položky v něm by načtenou značku přepsal.
@@ -266,7 +272,8 @@ To znamená:
 - po načtení RFID se na displeji zobrazí například Prusament nebo Bambu Lab;
 - stejný text odejde do Elegoo Sliceru;
 - všech 70 značek se nezobrazí jako ručně volitelné položky dropdownu;
-- patch nepřidává ani nemění tiskové profily Elegoo Sliceru.
+- firmware patch sám tiskové profily nemění; doprovodný Windows instalátor
+  aktuálně přidává ověřený profil Prusament PLA.
 
 ## Soubory patche
 
